@@ -1,0 +1,123 @@
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import scipy as sp
+import quandl
+import functools
+import seaborn as sns
+import plotnine as p9
+from datetime import datetime
+from datetime import timedelta
+
+
+import warnings
+
+# Suppress the warning
+warnings.filterwarnings("ignore")
+
+@functools.lru_cache(maxsize=16)
+def fetch_quandl(my_data_items, trim_start=None, trim_end=None):
+    qdata = quandl.get(list(my_data_items), returns="pandas", 
+                      trim_start=trim_start, trim_end=trim_end,
+                      api_key= 'uoxc6V3s61czWuHoGLcs')
+    return qdata
+def clean_quandl_columns(dataframe):
+    replacement_columns = {}
+    for c in dataframe.columns:
+        series_name, variable = c.split(' - ')
+        source_name, asset = series_name.split('/')
+        replacement_columns[c] = variable
+    renamed_data = dataframe.rename(columns=replacement_columns)
+    return renamed_data
+    
+PXJ = quandl.get_table('QUOTEMEDIA/PRICES', date = { 'gte': '2020-12-02', 'lte':  '2022-11-15'}, ticker='PXJ')
+
+OIH = quandl.get_table('QUOTEMEDIA/PRICES', date = { 'gte': '2020-12-02', 'lte':  '2022-11-15'}, ticker='OIH')
+
+
+# load data for ETFs X and Y
+prices_x = PXJ
+prices_y = OIH
+
+prices_x['date'] = pd.to_datetime(prices_x['date'])
+prices_y['date'] = pd.to_datetime(prices_y['date'])
+
+
+# set parameters for strategy
+m = 20  # number of days for return calculation
+g = 0.05  # threshold for entering a position
+j = 0.03  # threshold for flattening a position
+s = 0.03  # stop loss threshold
+
+# calculate Nt as running median of daily dollar volume for ETF X
+nt = prices_x['volume'].rolling(15).median()
+
+# calculate daily returns for ETFs X and Y
+returns_x = prices_x['close'].pct_change(m)
+returns_y = prices_y['close'].pct_change(m)
+
+# initialize variables to track PnL and position
+pnl = 0
+position = None  # 'long' or 'short'
+
+for date, return_x, return_y in zip(prices_x.index, returns_x, returns_y):
+    # check if we're at the first day of the month
+    if date.day == 1:
+        # check if we need to enter or maintain a position
+        if (return_x - return_y > g) and (position != 'short'):
+            # calculate number of shares to trade
+            shares_x = int(nt[date] / 100)
+            shares_y = int(nt[date] / 100)
+            # calculate gross traded cash
+            gross_cash = 2 * nt[date] / 100
+            # update position and PnL
+            position = 'short'
+            pnl -= shares_x * prices_x.loc[date, 'close']
+            pnl += shares_y * prices_y.loc[date, 'close']
+        elif (return_x - return_y < -g) and (position != 'long'):
+            # calculate number of shares to trade
+            shares_x = int(nt[date] / 100)
+            shares_y = int(nt[date] / 100)
+            # calculate gross traded cash
+            gross_cash = 2 * nt[date] / 100
+            # update position and PnL
+            position = 'long'
+            pnl += shares_x * prices_x.loc[date, 'close']
+            pnl -= shares_y * prices_y.loc[date, 'close']
+        elif (return_x - return_y > -j) and (return_x - return_y < j):
+            # flatten position
+            if position == 'long':
+                pnl -= shares_x * prices_x.loc[date, 'close']
+                pnl += shares_y * prices_y.loc[date, 'close']
+            elif position == 'short':
+                pnl += shares_x * prices_x.loc[date, 'close']
+                pnl -= shares_y * prices_y.loc[date, 'close']
+            position = None
+        # check for stop loss
+        # check for stop loss
+        if position and (pnl < -s * gross_cash):
+            # force exit at current prices
+            if position == 'long':
+                pnl -= shares_x * prices_x.loc[date, 'close']
+                pnl += shares_y * prices_y.loc[date, 'close']
+            elif position == 'short':
+                pnl += shares_x * prices_x.loc[date, 'close']
+                pnl -= shares_y * prices_y.loc[date, 'close']
+            position = None
+    # update cumulative PnL
+    cumulative_pnl = pnl
+
+# force a position close at the end of the analysis period
+if position == 'long':
+    pnl -= shares_x * prices_x.loc[date, 'close']
+    pnl += shares_y * prices_y.loc[date, 'close']
+elif position == 'short':
+    pnl += shares_x * prices_x.loc[date, 'close']
+    pnl -= shares_y * prices_y.loc[date, 'close']
+position = None
+
+# set capital for strategy
+capital = 2 * nt.max()
+
+# calculate return on capital
+return_on_capital = pnl / capital
