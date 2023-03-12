@@ -33,7 +33,7 @@ class Model:
             betas.iloc[i] = model.params
 
         predicted_results = predicted_results.dropna()
-        predicted_results['actual'] = self.predictors.iloc[126:,0]
+        predicted_results['actual'] = self.predictors.iloc[self.window_size:,0]
         predicted_results['predictions'] = predicted_results['predictions'].astype(float)
 
         self.predicted_results = predicted_results 
