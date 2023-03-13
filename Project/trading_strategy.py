@@ -210,7 +210,7 @@ class TradingStrategy:
         corr = abs(corr)
         return corr 
     
-    def plot_pnls(self, daily_pnls, initial_capital, start, end, title='Total Returns',adj_h=1200, adj_w=1100):
+    def plot_pnls(self, daily_pnls, initial_capital, start, end, title='Total Returns',yaxis='Portfolio Value',adj_h=1200, adj_w=1100):
         daily_pnls = daily_pnls.loc[start:end]
         cum_pnl = daily_pnls.cumsum()
         portfolios = cum_pnl + initial_capital 
@@ -229,7 +229,7 @@ class TradingStrategy:
         )
 
         fig.update_xaxes(title='Date',row=1,col=1)
-        fig.update_yaxes(title='Portfolio Value',row=1,col=1)
+        fig.update_yaxes(title=yaxis,row=1,col=1)
         
         fig.update_layout(
             margin=dict(t=25, l=25, b=25),
