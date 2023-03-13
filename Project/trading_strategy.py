@@ -70,7 +70,7 @@ class TradingStrategy:
             if date_signal != cur_signal:
                 if date_signal != 0:
                     if mode == 'equity':
-                        size = 2 * np.round(positions.loc[i,'Size'] * capital / cur_price)
+                        size = 2 * np.round(1.5* positions.loc[i,'Size'] * capital / cur_price)
                         returns.loc[i, 'Transaction Fees'] = size * cur_price * transaction_fee 
                     elif mode == 'future':
                         size = np.round(positions.loc[i, 'Size'] * capital / margin)
