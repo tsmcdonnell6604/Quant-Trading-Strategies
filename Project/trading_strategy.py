@@ -174,11 +174,11 @@ class TradingStrategy:
                 prev_price = cur_price 
 
                 if date_signal == 1: # 1 option for now 
-                    cur_pos = np.round(initial_capital / (cur_price*100)) 
+                    cur_pos = 100*np.round(initial_capital/(cur_price*100)) 
                     cur_signal = 1 
 
                 elif date_signal == -1:
-                    cur_pos = -1 * np.round(initial_capital / (cur_price*100))
+                    cur_pos = -100*np.round(initial_capital/(cur_price*100))
                     cur_signal = -1 
                 else:
                     cur_pos, cur_signal = 0, 0
@@ -195,7 +195,7 @@ class TradingStrategy:
                     prev_price = cur_price 
                 else:
                     daily_pnl = 0
-            daily_pnl -= fee*abs(cur_pos)
+            daily_pnl -= (fee*abs(cur_pos))/100
             returns_df.loc[date,['Daily PnL','Delta']] = [daily_pnl, total_delta] 
         
         return returns_df  
