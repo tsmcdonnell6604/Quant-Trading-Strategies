@@ -86,6 +86,7 @@ class TradingStrategy:
             returns.loc[i, 'Daily PnL'] = daily_pnl 
         
         returns['Transaction Fees'] = returns['Transaction Fees'].fillna(0)
+        returns['Daily PnL'] -= returns['Transaction Fees']
         return returns 
     
     def retrieve_options(self, date):
@@ -189,7 +190,7 @@ class TradingStrategy:
                     prev_price = cur_price 
                 else:
                     daily_pnl = 0
-            
+            daily_pnl -= .65*abs(cur_pos)
             returns_df.loc[date,['Daily PnL','Delta']] = [daily_pnl, total_delta] 
         
         return returns_df  
