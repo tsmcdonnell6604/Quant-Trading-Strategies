@@ -2,6 +2,7 @@ import quandl
 import functools 
 import pandas as pd 
 import numpy as np
+import wrds 
 
 class DataCollection:
     def __init__(self, key, start_date, end_date, years, month_codes):
@@ -54,7 +55,7 @@ class DataCollection:
         qdata = qdata.set_index('date').sort_index(ascending=True)
         return qdata
     
-    def get_contract(self,name,years,month_codes): 
+    def get_contract(self,name): 
         '''
         Obtains future contract price information given the month and year codes 
 
@@ -70,8 +71,8 @@ class DataCollection:
             df_filtered (df): Dataframe consisting of future price time-series with desired multiplier applied 
         '''
         df = pd.DataFrame()
-        for y in years:
-            for m in month_codes:
+        for y in self.years:
+            for m in self.month_codes:
                 code = 'OWF/' + name + '_' + m + y + '_IVM'
                 qdata = quandl.get(code, returns='pandas', api_key=self.key, start_date=self.start_date, end_date=self.end_date)
                 df = pd.concat([df, qdata.reset_index()])
@@ -94,5 +95,4 @@ class DataCollection:
         temp = temp.dropna(subset=['VIX'])
         temp = temp[['Days until Event']]
         return temp 
-    
     

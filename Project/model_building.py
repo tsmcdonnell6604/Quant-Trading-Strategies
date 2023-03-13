@@ -40,9 +40,13 @@ class Model:
         self.pvalues = pvalues 
         self.betas = betas 
 
-    def performance_metrics(self, upper_quantile,lower_quantile):
-        self.predicted_results['upper threshold'] = self.predicted_results['actual'].rolling(self.window_size - 1).quantile(upper_quantile).shift()
-        self.predicted_results['lower threshold'] = self.predicted_results['actual'].rolling(self.window_size - 1).quantile(lower_quantile).shift()
+    def performance_metrics(self,upper_quantile,lower_quantile,static=False):
+        if static == False:
+            self.predicted_results['upper threshold'] = self.predicted_results['actual'].rolling(self.window_size - 1).quantile(upper_quantile).shift()
+            self.predicted_results['lower threshold'] = self.predicted_results['actual'].rolling(self.window_size - 1).quantile(lower_quantile).shift()
+        else:
+            self.predicted_resutls['upper threshold'] = upper_quantile 
+            self.predicted_results['lower threshold'] = lower_quantile 
 
         metrics = pd.DataFrame(index=['Metrics'],columns=['MSE','DA','Up Acc','Down Acc','Prediction Num'])
         mse = np.mean((self.predicted_results['actual'] - self.predicted_results['predictions'])**2)
