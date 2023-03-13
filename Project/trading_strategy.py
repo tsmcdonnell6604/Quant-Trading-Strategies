@@ -195,8 +195,9 @@ class TradingStrategy:
                     prev_price = cur_price 
                 else:
                     daily_pnl = 0
-            daily_pnl -= (fee*abs(cur_pos))/100
-            returns_df.loc[date,['Daily PnL','Delta']] = [daily_pnl, total_delta] 
+            transaction_fee = (fee * abs(cur_pos))/100 
+            daily_pnl -= transaction_fee 
+            returns_df.loc[date,['Daily PnL','Delta','Transaction Fees']] = [daily_pnl, total_delta,transaction_fee] 
         
         return returns_df  
     
