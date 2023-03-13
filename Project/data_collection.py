@@ -48,7 +48,7 @@ class DataCollection:
         '''
         qdata = quandl.get_table(table,
                             date = { 'gte': self.start_date, 'lte': self.end_date },
-                            qopts = {"columns":["date", "close","volume"]},
+                            qopts = {"columns":["date", "close","volume","adj_close"]},
                             ticker = ticker,
                             api_key = self.key,
                             paginate=True)
