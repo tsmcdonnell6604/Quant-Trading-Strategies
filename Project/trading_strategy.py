@@ -55,7 +55,7 @@ class TradingStrategy:
         signals_df.loc[self.predicted_results['position'] == 'none', 'signal'] = 0
         self.signals = signals_df 
 
-    def backtest(self,asset,direction,positions,capital,margin,multiplier=1,mode=0,transaction_fee=0):
+    def backtest(self,asset,direction,positions,capital,margin,multiplier=1,mode=0,transaction_fee=0, shorting_fee=0):
         asset.columns = ['Price']
         dates = self.signals.index
         cur_signal = 0
@@ -72,17 +72,22 @@ class TradingStrategy:
                     if mode == 'equity':
                         size = 2 * np.round(1.5* positions.loc[i,'Size'] * capital / cur_price)
                         returns.loc[i, 'Transaction Fees'] = size * cur_price * transaction_fee 
+                        if cur_pos < 0:
+                            returns.loc[i, 'Transaction Fees'] += size * shorting_fee
                     elif mode == 'future':
                         size = np.round(positions.loc[i, 'Size'] * capital / margin)
                         returns.loc[i, 'Transaction Fees'] = size * transaction_fee 
                     elif mode == 'spy':
                         size = np.round(positions.loc[i,'Size'])
-                        returns.loc[i, 'Transaction Fees'] = size * transaction_fee 
+                        returns.loc[i, 'Transaction Fees'] = size * cur_price* transaction_fee 
+                        if cur_pos < 0:
+                            returns.loc[i, 'Transaction Fees'] += size * cur_price * shorting_fee
                     cur_pos = size * date_signal * direction
                     cur_signal = date_signal
                     prev_price = cur_price 
                 else:
                     cur_pos, cur_signal = 0, 0
+            
             returns.loc[i, 'Daily PnL'] = daily_pnl 
         
         returns['Transaction Fees'] = returns['Transaction Fees'].fillna(0)
@@ -123,7 +128,7 @@ class TradingStrategy:
                     in_pos = True  
             self.options_chain = options_chain 
 
-    def backtest_options(self,initial_capital,how_far=2):
+    def backtest_options(self,initial_capital,fee,how_far=2):
         dates = self.signals.index 
         cur_signal = 0
         returns_df = pd.DataFrame(index=dates)
@@ -190,7 +195,7 @@ class TradingStrategy:
                     prev_price = cur_price 
                 else:
                     daily_pnl = 0
-            daily_pnl -= .65*abs(cur_pos)
+            daily_pnl -= fee*abs(cur_pos)
             returns_df.loc[date,['Daily PnL','Delta']] = [daily_pnl, total_delta] 
         
         return returns_df  
