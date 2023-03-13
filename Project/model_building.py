@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np 
 from tqdm import tqdm 
 from statsmodels.tsa.arima.model import ARIMA
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 
 class Model:
     def __init__(self, predictors, window_size):
@@ -61,3 +63,104 @@ class Model:
         metrics.loc['Metrics'] = [mse, da, acc_up, acc_down, len(sig_up) + len(sig_down)]
         self.metrics = metrics 
 
+    def plot_pvalues(self):
+        titles = tuple(self.pvalues.columns[:-1].to_list())
+        fig = make_subplots(
+            rows = 3,
+            cols = 2,
+            subplot_titles=titles 
+            )
+        
+        fig.add_trace(go.Scatter(x=self.pvalues.index,name='SPY',y=self.pvalues['SPY Returns']),row=1,col=1)
+        fig.add_trace(go.Scatter(x=self.pvalues.index,name='EAFE',y=self.pvalues['EAFE Returns']),row=1,col=2)
+        fig.add_trace(go.Scatter(x=self.pvalues.index,name='Calendar',y=self.pvalues['Days until Event']),row=2,col=1)
+        fig.add_trace(go.Scatter(x=self.pvalues.index,name='Volume',y=self.pvalues['Volume Change']),row=2,col=2)
+        fig.add_trace(go.Scatter(x=self.pvalues.index,name='AR',y=self.pvalues['AR']),row=3,col=1)
+        fig.add_trace(go.Scatter(x=self.pvalues.index,name='MA',y=self.pvalues['MA']),row=3,col=2)
+
+        fig.update_xaxes(title='Date',row=1,col=1)
+        fig.update_xaxes(title='Date',row=1,col=2)
+        fig.update_xaxes(title='Date',row=2,col=1)
+        fig.update_xaxes(title='Date',row=2,col=2)
+        fig.update_xaxes(title='Date',row=3,col=1)
+        fig.update_xaxes(title='Date',row=3,col=2)
+
+        fig.update_yaxes(title='p-value',row=1,col=1)
+        fig.update_yaxes(title='p-value',row=1,col=2)
+        fig.update_yaxes(title='p-value',row=2,col=1)
+        fig.update_yaxes(title='p-value',row=2,col=2)
+        fig.update_yaxes(title='p-value',row=3,col=1)
+        fig.update_yaxes(title='p-value',row=3,col=2)
+
+        fig.layout.update(showlegend=False)
+
+        fig.update_layout(
+            height=750,
+            width=1250,
+            margin=dict(t=25, l=25, b=25),
+        )
+
+        fig.show()
+
+    def calc_significance(self):
+        df = pd.DataFrame(index=self.pvalues.columns[:-1],columns=['Proportion'])
+        for predictor in df.index:
+            df.loc[predictor] = len(self.pvalues[self.pvalues[predictor] < 0.05]) / len(self.pvalues)
+        return df 
+
+    def plot_betas(self):
+        titles = tuple(self.betas.columns[:-1].to_list())
+        fig = make_subplots(
+            rows = 3,
+            cols = 2,
+            subplot_titles=titles 
+            )
+        
+        fig.add_trace(go.Scatter(x=self.betas.index,name='SPY',y=self.betas['SPY Returns']),row=1,col=1)
+        fig.add_trace(go.Scatter(x=self.betas.index,name='EAFE',y=self.betas['EAFE Returns']),row=1,col=2)
+        fig.add_trace(go.Scatter(x=self.betas.index,name='Calendar',y=self.betas['Days until Event']),row=2,col=1)
+        fig.add_trace(go.Scatter(x=self.betas.index,name='Volume',y=self.betas['Volume Change']),row=2,col=2)
+        fig.add_trace(go.Scatter(x=self.betas.index,name='AR',y=self.betas['AR']),row=3,col=1)
+        fig.add_trace(go.Scatter(x=self.betas.index,name='MA',y=self.betas['MA']),row=3,col=2)
+
+        fig.update_xaxes(title='Date',row=1,col=1)
+        fig.update_xaxes(title='Date',row=1,col=2)
+        fig.update_xaxes(title='Date',row=2,col=1)
+        fig.update_xaxes(title='Date',row=2,col=2)
+        fig.update_xaxes(title='Date',row=3,col=1)
+        fig.update_xaxes(title='Date',row=3,col=2)
+
+        fig.update_yaxes(title='Beta',row=1,col=1)
+        fig.update_yaxes(title='Beta',row=1,col=2)
+        fig.update_yaxes(title='Beta',row=2,col=1)
+        fig.update_yaxes(title='Beta',row=2,col=2)
+        fig.update_yaxes(title='Beta',row=3,col=1)
+        fig.update_yaxes(title='Beta',row=3,col=2)
+
+        fig.layout.update(showlegend=False)
+
+        fig.update_layout(
+            height=750,
+            width=1250,
+            margin=dict(t=25, l=25, b=25),
+        )
+
+        fig.show()
+        
+    def plot_predictions(self,start,end):
+        fig = make_subplots(rows=1,cols=1,subplot_titles=('ARIMA(1,1,1) Model',))
+        period = self.predicted_results.loc[start:end]
+
+        fig.add_trace(go.Scatter(x=period.index,name='Predicted',y=period['predictions']),row=1,col=1)
+        fig.add_trace(go.Scatter(x=period.index,name='Actual',y=period['actual']),row=1,col=1)
+        fig.add_trace(go.Scatter(x=period.index,name='Upper Threshold',y=period['upper threshold']),row=1,col=1)
+        fig.add_trace(go.Scatter(x=period.index,name='Lower Threshold',y=period['lower threshold']),row=1,col=1)
+
+        fig.update_xaxes(title='Date',row=1,col=1)
+        fig.update_yaxes(title='VIX Return',row=1,col=1)
+        
+        fig.update_layout(
+            margin=dict(t=25, l=25, b=25),
+        )
+
+        fig.show()
