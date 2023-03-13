@@ -2,7 +2,6 @@ import quandl
 import functools 
 import pandas as pd 
 import numpy as np
-import wrds 
 
 class DataCollection:
     def __init__(self, key, start_date, end_date, years, month_codes):
@@ -82,6 +81,16 @@ class DataCollection:
         return df_filtered
     
     def convert_calendar(self,calendar,returns):
+        '''
+        Converts raw calendar data to days until event DataFrame
+
+        Parameters:
+            calendar (DataFrame): DataFrame of the economic calendar
+            returns (DataFrame): DataFrame of an asset which can act a trading day reference 
+
+        Returns:
+            temp (DataFrame): DataFrame with the economic calendar data 
+        '''
         calendar['DATE'] = pd.to_datetime(calendar['Start']).dt.date
         calendar = calendar.set_index('DATE')
 

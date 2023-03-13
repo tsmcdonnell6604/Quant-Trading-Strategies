@@ -15,6 +15,9 @@ class Model:
         self.metrics = None 
 
     def train_model(self):
+        '''
+        Trains the ARIMA(1,1,1) model and sets the class variables 
+        '''
         start, end = 0, self.window_size
         columns = self.predictors.iloc[:,1:].columns.to_list()
         columns.append('AR')
@@ -43,6 +46,17 @@ class Model:
         self.betas = betas 
 
     def performance_metrics(self,upper_quantile,lower_quantile,static=False):
+        '''
+        Obtains performance metrics for the ARIMA model
+
+        Parameters:
+            upper_quantile (float): Rolling upper quantile
+            lower_quantile (float): Rolling lower quantile
+            static (bool): Whether to use a rolling quantile 
+
+        Returns:
+            Sets the metrics member variable 
+        '''
         if static == False:
             self.predicted_results['upper threshold'] = self.predicted_results['actual'].rolling(self.window_size - 1).quantile(upper_quantile).shift()
             self.predicted_results['lower threshold'] = self.predicted_results['actual'].rolling(self.window_size - 1).quantile(lower_quantile).shift()
@@ -64,6 +78,9 @@ class Model:
         self.metrics = metrics 
 
     def plot_pvalues(self):
+        '''
+        Plots the pvalues after training the model 
+        '''
         titles = tuple(self.pvalues.columns[:-1].to_list())
         fig = make_subplots(
             rows = 3,
@@ -103,12 +120,21 @@ class Model:
         fig.show()
 
     def calc_significance(self):
+        '''
+        Calculates the proportion of significant predictors for each predictor 
+
+        Returns:
+            df (DataFrame): DataFrame with the proportion of significant predictors 
+        '''
         df = pd.DataFrame(index=self.pvalues.columns[:-1],columns=['Proportion'])
         for predictor in df.index:
             df.loc[predictor] = len(self.pvalues[self.pvalues[predictor] < 0.05]) / len(self.pvalues)
         return df 
 
     def plot_betas(self):
+        '''
+        Plots the betas from the ARIMA(1,1,1) model 
+        '''
         titles = tuple(self.betas.columns[:-1].to_list())
         fig = make_subplots(
             rows = 3,
@@ -148,6 +174,13 @@ class Model:
         fig.show()
         
     def plot_predictions(self,start,end):
+        '''
+        Plots the predictions, actual values, upper, and lower thresholds for a time period 
+
+        Parameters:
+            start (string): Start date 
+            end (string): End date 
+        '''
         fig = make_subplots(rows=1,cols=1,subplot_titles=('ARIMA(1,1,1) Model',))
         period = self.predicted_results.loc[start:end]
 

@@ -16,6 +16,9 @@ class TradingStrategy:
         self.options_chain = options_chain 
 
     def create_signals(self):
+        '''
+        Creates signals for trading 
+        '''
         self.predicted_results['Signal'] = 0
         self.predicted_results.loc[self.predicted_results['predictions'] >= self.predicted_results['upper threshold'], 'Signal'] = 1 
         self.predicted_results.loc[self.predicted_results['predictions'] <= self.predicted_results['lower threshold'], 'Signal'] = -1
@@ -56,6 +59,23 @@ class TradingStrategy:
         self.signals = signals_df 
 
     def backtest(self,asset,direction,positions,capital,margin,multiplier=1,mode=0,transaction_fee=0, shorting_fee=0):
+        '''
+        Backtester for an asset given the signals 
+
+        Parameters:
+            asset (DataFrame): Asset to be backtested
+            direction (int): Whether it has positive or negative correlation to VIX 
+            positions (DataFrame): DataFrame consisting of the positions
+            capital (float): Initial capital 
+            margin (float): Margin requirement 
+            multiplier (int): Multiplier for contracts
+            mode (string): spy / future / etf 
+            transaction_fee (float): Transaction fee 
+            shorting_fee (float): Shorting fee 
+
+        Returns:
+            returns (DataFrame): DataFrame of daily PnLs
+        '''
         asset.columns = ['Price']
         dates = self.signals.index
         cur_signal = 0
@@ -95,6 +115,15 @@ class TradingStrategy:
         return returns 
     
     def retrieve_options(self, date):
+        '''
+        Retrieves options for a given date using WRDS database 
+
+        Parameters:
+            date (string): Date to retrieve options
+
+        Returns:
+            df (DataFrame): DataFrame of options chain 
+        '''
         query = f"""
         SELECT symbol, date, exdate, cp_flag, best_bid, strike_price,
         best_offer, impl_volatility, delta, gamma, vega, theta 
@@ -109,6 +138,9 @@ class TradingStrategy:
         return df
 
     def obtain_chain(self):
+        '''
+        Obtains options chain with a given signal set 
+        '''
         if self.options_chain.shape[0] != 0:
             print('Options chain already stored. Use TradingStrategy.options_chain')
         else:
@@ -129,6 +161,17 @@ class TradingStrategy:
             self.options_chain = options_chain 
 
     def backtest_options(self,initial_capital,fee=0,how_far=2):
+        '''
+        Backtester for options 
+
+        Parameters:
+            initial_capital (float): Initial capital
+            fee (float): Transaction fees
+            how_far (int): The expiry date for the option
+
+        Returns:
+            returns_df (DataFrame): Options PnL
+        '''
         dates = self.signals.index 
         cur_signal = 0
         returns_df = pd.DataFrame(index=dates)
@@ -202,6 +245,16 @@ class TradingStrategy:
         return returns_df  
     
     def position_sizing(self, asset, n):
+        '''
+        Obtains position sizing for an asset
+
+        Parameters:
+            asset (DataFrame): Asset for position sizing
+            n (int): n-day correlation
+
+        Returns:
+            corr (DataFrame): DataFrame with position sizing 
+        '''
         merged = pd.concat([asset.pct_change().dropna(), self.vix_data.pct_change().dropna()],axis=1)
         corr = pd.DataFrame(index=merged.index,columns=['Size'])
         for i in range(n, len(merged)):
@@ -212,6 +265,15 @@ class TradingStrategy:
         return corr 
     
     def plot_pnls(self, daily_pnls, initial_capital, start, end, title='Total Returns',yaxis='Portfolio Value',adj_h=1200, adj_w=1100):
+        '''
+        Plot PnLs given daily PnLs 
+
+        Parameters:
+            daily_pnls (DataFrame): Daily PnLs 
+            initial_capital (float): Initial capital
+            start (string): Start date
+            end (string): End date 
+        '''
         daily_pnls = daily_pnls.loc[start:end]
         cum_pnl = daily_pnls.cumsum()
         portfolios = cum_pnl + initial_capital 
@@ -239,6 +301,16 @@ class TradingStrategy:
         fig.show()
 
     def performance_metrics(self, rets, adj=252):
+        '''
+        Obtains performance metrics from a PnL set 
+
+        Parameters:
+            rets (DataFrame): DataFrame with returns
+            adj (int): Adjustment factor
+
+        Returns:
+            metrics (DataFrame): DataFrame with performance metrics
+        '''
         metrics = pd.DataFrame(columns=rets.columns,index=['Annualized Return',
                                                            'Annualized Volatility',
                                                            'Annualized Sharpe Ratio',
@@ -260,6 +332,17 @@ class TradingStrategy:
         return metrics 
     
     def year_analysis(self,pnls,initial_capital,years):
+        '''
+        Obtains performance metrics for a series of years
+
+        Parameters:
+            pnls (DataFrame): DataFrame of PnLs 
+            initial_capital (float): Initial capital for each year 
+            years (list): List of years 
+
+        Returns:
+            metrics (DataFrame): DataFrame of performance metrics 
+        '''
         metrics = pd.DataFrame(columns=years,index=['Annualized Return',
                                                            'Annualized Volatility',
                                                            'Annualized Sharpe Ratio',
@@ -281,6 +364,12 @@ class TradingStrategy:
 
 
     def compare_ratios(self,ratios,title,yaxis):
+        '''
+        Compares two performance ratios 
+
+        Parameters:
+            ratios (DataFrame): DataFrame consisting of the ratios
+        '''
         trace1 = go.Bar(x=ratios.columns,y=ratios.iloc[0],name=ratios.index[0])
         trace2 = go.Bar(x=ratios.columns,y=ratios.iloc[1],name=ratios.index[1])
 
