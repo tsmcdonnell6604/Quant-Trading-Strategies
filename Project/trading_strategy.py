@@ -128,7 +128,7 @@ class TradingStrategy:
                     in_pos = True  
             self.options_chain = options_chain 
 
-    def backtest_options(self,initial_capital,fee,how_far=2):
+    def backtest_options(self,initial_capital,fee=0,how_far=2):
         dates = self.signals.index 
         cur_signal = 0
         returns_df = pd.DataFrame(index=dates)
@@ -210,12 +210,12 @@ class TradingStrategy:
         corr = abs(corr)
         return corr 
     
-    def plot_pnls(self, daily_pnls, initial_capital, start, end, adj_h=1200, adj_w=1100):
+    def plot_pnls(self, daily_pnls, initial_capital, start, end, title='Total Returns',adj_h=1200, adj_w=1100):
         daily_pnls = daily_pnls.loc[start:end]
         cum_pnl = daily_pnls.cumsum()
         portfolios = cum_pnl + initial_capital 
 
-        fig = make_subplots(rows=1,cols=1,subplot_titles=('Total Returns',))
+        fig = make_subplots(rows=1,cols=1,subplot_titles=(title,))
         for i in portfolios.columns:
             fig.add_trace(go.Scatter(x=portfolios.index,name=i,y=portfolios[i]),row=1,col=1)
 
@@ -257,5 +257,41 @@ class TradingStrategy:
         metrics.loc['CVaR (0.05)'] = rets[rets <= rets.quantile(0.05)].mean()
 
         return metrics 
+    
+    def year_analysis(self,pnls,initial_capital,years):
+        metrics = pd.DataFrame(columns=years,index=['Annualized Return',
+                                                           'Annualized Volatility',
+                                                           'Annualized Sharpe Ratio',
+                                                           'Annualized Sortino Ratio',
+                                                           'Skewness',
+                                                           'Kurtosis',
+                                                           'VaR (0.05)',
+                                                           'CVaR (0.05)'])
+        
+        for year in years:
+            now, next = year, year + 1 
+            daily_pnl = pnls.loc[str(now):str(next)]
+            port = daily_pnl.cumsum() + initial_capital
+            rets = port.pct_change().dropna()
+
+            metrics[year] = self.performance_metrics(rets)
+
+        return metrics 
+
+
+    def compare_ratios(self,ratios,title,yaxis):
+        trace1 = go.Bar(x=ratios.columns,y=ratios.iloc[0],name=ratios.index[0])
+        trace2 = go.Bar(x=ratios.columns,y=ratios.iloc[1],name=ratios.index[1])
+
+        layout = go.Layout(title=title,
+                        xaxis={'title': 'Year'},
+                        yaxis={'title': yaxis})
+
+        fig = go.Figure(data=[trace1, trace2],layout=layout)
+        fig.update_layout(
+            margin=dict(t=40, l=25, b=25),
+        )
+
+        fig.show()
 
 
