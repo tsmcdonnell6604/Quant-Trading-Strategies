@@ -237,29 +237,6 @@ class TradingStrategy:
         )
 
         fig.show()
-        
-    def plot_spy_etf(self, spy_value):
-        fig = make_subplots(rows=1,cols=1,subplot_titles=('SPY ETF Value',))
-
-        fig.add_trace(go.Scatter(x=spy_value.index,name='SPY ETF',y=spy_value),row=1,col=1)
-
-        fig.update_layout(
-            height=1200,
-            width=1100,
-            margin=dict(t=100, l=50),
-            legend_title_text="Asset",
-            legend_x=1.005,
-            legend_y=0.4,
-        )
-
-        fig.update_xaxes(title='Date',row=1,col=1)
-        fig.update_yaxes(title='ETF Value',row=1,col=1)
-
-        fig.update_layout(
-            margin=dict(t=25, l=25, b=25),
-        )
-
-        fig.show()
 
     def performance_metrics(self, rets, adj=252):
         metrics = pd.DataFrame(columns=rets.columns,index=['Annualized Return',
